@@ -1,14 +1,14 @@
-import selenium
 import sys
 from bs4 import BeautifulSoup
 from property import Property
 from csv import writer
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
-
+from selenium.common.exceptions import TimeoutException
 
 
 base_path = 'https://www.encuentra24.com/costa-rica-es/searchresult/bienes-raices-venta-de-propiedades#search=f_currency.usd|number.50&page='
@@ -51,7 +51,25 @@ def get_title(post):
 
 def get_price(post):
     price = post.find(class_='ann-price').get_text().split(" ")[0]
-    return price[1:].replace(',','')
+    return price.replace(',','')
+
+
+def get_location(url):
+    url = 'https://encuentra24.com' + url
+    page = requests.get(url)
+    soup = BeautifulSoup(page.text, 'html.parser')
+    breadcrumb = soup.find(class_='breadcrumb')
+    elements = breadcrumb.find_all('a')
+    found_province = False
+    location = ''
+    for element in elements:
+        if 'provincia' in element.get_text():
+            found_province = True
+
+        if found_province:
+            location += element.get_text().strip() + ' | '
+
+    return location
 
 
 def process_page(page):
@@ -66,7 +84,8 @@ def process_page(page):
     for post in posts:
         title = get_title(post)
         url = post.find(class_='ann-box-title')['href']
-        location = post.find(class_='ann-info-item').get_text().strip()
+        #location = post.find(class_='ann-info-item').get_text().strip()
+        location = get_location(url)
         price = get_price(post)
         size, rooms = get_size_and_rooms(post)
         time_in_market = get_time_in_market(post)
@@ -75,14 +94,16 @@ def process_page(page):
             properties.append(Property(title, location, price, time_in_market, size, rooms, url))
 
 
-def get_soup(page_url):
+def get_soup(page_url, class_that_should_be_loaded = 'ann-box-title'):
     browser = get_browser()
     browser.get(page_url)
 
     try:
         WebDriverWait(browser, 10).until(
-            ec.presence_of_element_located((By.CLASS_NAME, "ann-box-title")))
+            ec.presence_of_element_located((By.CLASS_NAME, class_that_should_be_loaded)))
         html = browser.page_source
+    except TimeoutException:
+        return None
     finally:
         browser.quit()
 
