@@ -10,6 +10,10 @@ class PropertyPageScrapper:
         page = requests.get(url)
         soup = BeautifulSoup(page.text, 'html.parser')
         breadcrumb = soup.find(class_='breadcrumb')
+
+        if breadcrumb is None:
+            return ''
+
         elements = breadcrumb.find_all('a')
         found_province = False
         location = ''

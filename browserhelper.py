@@ -11,8 +11,13 @@ class BrowserHelper:
 
     @staticmethod
     def get_soup(page_url, class_that_should_be_loaded='ann-box-title'):
-        browser = BrowserHelper.get_browser()
-        browser.get(page_url)
+
+        # Getting error: selenium.common.exceptions.WebDriverException: Message: unknown error: unable to discover open pages
+        try:
+            browser = BrowserHelper.get_browser()
+            browser.get(page_url)
+        except:
+            return None
 
         try:
             WebDriverWait(browser, 10).until(

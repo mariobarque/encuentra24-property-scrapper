@@ -30,7 +30,7 @@ class PropertyPostProcessor:
     def get_property(post):
         title = PostScrapper.get_title(post)
         url = post.find(class_='ann-box-title')['href']
-        # location = post.find(class_='ann-info-item').get_text().strip()
+        #location = post.find(class_='ann-info-item').get_text().strip()
         location = PropertyPageScrapper.get_location(url)
         price = PostScrapper.get_price(post)
         size, rooms = PostScrapper.get_size_and_rooms(post)
