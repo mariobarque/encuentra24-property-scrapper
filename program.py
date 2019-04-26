@@ -7,10 +7,13 @@ import os
 import glob
 import pandas as pd
 
-
+from database.database import Database
 from helpers.paginationhelper import PaginationHelper
 from propertypostprocessor import PropertyPostProcessor
 
+
+max_retries = 5
+existing_urls = Database.get_urls()
 
 def main():
     scrap_data()
@@ -22,28 +25,55 @@ def scrap_data():
     print('Total pages: %d' % pages)
     page_array = [(page,) for page in range(1, pages+1)]
 
-    #page_array = [(page,) for page in  [4, 58, 48, 90, 84, 434, 83, 100, 3, 435, 91, 128, 436, 46, 60, 92, 1, 47, 59, 2, 89, 82, 433]]
+    retries = 0
 
-    pool = mp.Pool(32)
-    pool.starmap(get_and_save_page, page_array)
+    while retries < max_retries:
+        try:
+            pool = mp.Pool(32)
+            pool.starmap(get_and_save_page, page_array)
 
-    print('Done scrapping data.')
+            print('Done scrapping data.')
+            break
+        except:
+            print(sys.exc_info()[0])
+            files = os.listdir("data")
+            processed_numbers = []
+            all_numbers = [i for i in range(1, pages)]
+            for file in files:
+                if file.endswith('.csv'):
+                    processed_numbers.append(int(file.replace('properties_', '').replace('.csv', '')))
+
+            missing = set(all_numbers) - set(processed_numbers)
+            print('Missing:')
+            print(missing)
+
+            page_array = missing
+            retries += 1
+            print('Retrying...')
 
 
 def merge_csv_files():
     os.chdir(os.getcwd() + "/data")
     all_filenames = [i for i in glob.glob('*.{}'.format('csv'))]
     df = pd.concat([pd.read_csv(f) for f in all_filenames])
-    df = df.dropna(axis=0, how='any')
+    df = df.dropna(axis=0, subset=['Location', 'Price'])
 
     df.to_csv("properties.csv", index=False, encoding='utf-8-sig')
 
     print('Done merging.')
 
+
 def get_and_save_page(page):
     properties = PropertyPostProcessor.process_post(page)
-    print('Done processing page: %d with %d properties' % (page, len(properties)))
+    if properties is None:
+        print('Error with page number %d' % page)
+        raise Exception('Error processing a page...')
 
+    print('Done processing page: %d with %d properties' % (page, len(properties)))
+    save_page(properties, page)
+
+
+def save_page(properties, page):
     headers = ['Title', 'Location', 'Price', 'Time in Market', 'Size', 'Construction Size',
                'Construction Year', 'Rooms', 'Category', 'Price Reduced', 'URL']
     csv_content = []
@@ -74,6 +104,7 @@ def get_and_save_page(page):
             except:
                 print("Unexpected error: %s" % sys.exc_info()[0])
                 tries += 1
+
 
 
 main()

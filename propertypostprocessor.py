@@ -10,7 +10,7 @@ class PropertyPostProcessor:
 
 
     @staticmethod
-    def process_post(page):
+    def process_post(page, existing_urls):
 
         url = Constants.base_path + str(page)
         print(url)
@@ -21,13 +21,13 @@ class PropertyPostProcessor:
         posts = soup.find_all('article')
         properties = []
         for post in posts:
-            properties.append(PropertyPostProcessor.get_property(post))
+            properties.append(PropertyPostProcessor.get_property(post, existing_urls))
 
         return properties
 
 
     @staticmethod
-    def get_property(post):
+    def get_property(post, existing_urls):
         title = PostScrapper.get_title(post)
         url = post.find(class_='ann-box-title')['href']
         time_in_market = PostScrapper.get_time_in_market(post)
