@@ -1,9 +1,9 @@
-from browserhelper import BrowserHelper
+from helpers.browserhelper import BrowserHelper
 from constants import Constants
 
-from postscrapper import PostScrapper
+from scrappers.postscrapper import PostScrapper
 from property import Property
-from propertypagescrapper import PropertyPageScrapper
+from scrappers.propertypagescrapper import PropertyPageScrapper
 
 
 class PropertyPostProcessor:
@@ -30,16 +30,14 @@ class PropertyPostProcessor:
     def get_property(post):
         title = PostScrapper.get_title(post)
         url = post.find(class_='ann-box-title')['href']
-        #location = post.find(class_='ann-info-item').get_text().strip()
-        location = PropertyPageScrapper.get_location(url)
-        price = PostScrapper.get_price(post)
-        size, rooms = PostScrapper.get_size_and_rooms(post)
         time_in_market = PostScrapper.get_time_in_market(post)
 
-        if PropertyPostProcessor.is_property_valid(title, location, price):
-            return Property(title, location, price, time_in_market, size, rooms, url)
+        prop = Property(title, time_in_market, url)
 
-        return None
+        property_page_scrapper = PropertyPageScrapper(url)
+        prop = property_page_scrapper.complete_property(prop)
+
+        return prop
 
 
     @staticmethod

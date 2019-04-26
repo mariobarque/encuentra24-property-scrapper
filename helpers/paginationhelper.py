@@ -1,6 +1,6 @@
 import sys
 
-from browserhelper import BrowserHelper
+from helpers.browserhelper import BrowserHelper
 from constants import Constants
 
 

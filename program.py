@@ -8,12 +8,12 @@ import glob
 import pandas as pd
 
 
-from paginationhelper import PaginationHelper
+from helpers.paginationhelper import PaginationHelper
 from propertypostprocessor import PropertyPostProcessor
 
 
 def main():
-    #scrap_data()
+    scrap_data()
     merge_csv_files()
 
 def scrap_data():
@@ -24,7 +24,7 @@ def scrap_data():
 
     #page_array = [(page,) for page in  [4, 58, 48, 90, 84, 434, 83, 100, 3, 435, 91, 128, 436, 46, 60, 92, 1, 47, 59, 2, 89, 82, 433]]
 
-    pool = mp.Pool(10)
+    pool = mp.Pool(32)
     pool.starmap(get_and_save_page, page_array)
 
     print('Done scrapping data.')
@@ -44,7 +44,8 @@ def get_and_save_page(page):
     properties = PropertyPostProcessor.process_post(page)
     print('Done processing page: %d with %d properties' % (page, len(properties)))
 
-    headers = ['Title', 'Location', 'Price', 'Time in Market', 'Size', 'Rooms', 'URL']
+    headers = ['Title', 'Location', 'Price', 'Time in Market', 'Size', 'Construction Size',
+               'Construction Year', 'Rooms', 'Category', 'Price Reduced', 'URL']
     csv_content = []
     for p in properties:
         # Unexpected typeerror happened
@@ -53,7 +54,11 @@ def get_and_save_page(page):
                             '' if hasattr(p, 'price') == False else p.price,
                             '' if hasattr(p, 'time_in_market') == False else p.time_in_market,
                             '' if hasattr(p, 'size') == False else p.size,
+                            '' if hasattr(p, 'construction_size') == False else p.construction_size,
+                            '' if hasattr(p, 'construction_year') == False else p.construction_year,
                             '' if hasattr(p, 'rooms') == False else p.rooms,
+                            '' if hasattr(p, 'category') == False else p.category,
+                            '' if hasattr(p, 'price_reduced') == False else p.price_reduced,
                             '' if hasattr(p, 'url') == False else p.url])
 
     with open('data/properties_%d.csv' % page, 'w', encoding='utf-8-sig') as csv_file:
